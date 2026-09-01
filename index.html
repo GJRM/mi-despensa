@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7f5ef">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mi Despensa">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Mi Despensa</title>
+<style>
+:root {
+  --bg:#f7f5ef; --card:#ffffff; --text:#1f2933; --muted:#6b7280;
+  --line:#e5e7eb; --accent:#2f6b4f; --accent-soft:#e8f1ec; --warn:#9a5b18; --warn-soft:#fff3df;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+main{max-width:760px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 14px calc(84px + env(safe-area-inset-bottom))}
+header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+h1{font-size:28px;line-height:1.05;margin:0 0 5px}
+.sub{font-size:13px;color:var(--muted);margin:0}
+.badge{font-size:12px;background:var(--accent-soft);color:var(--accent);padding:7px 9px;border-radius:999px;white-space:nowrap}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.stat strong{display:block;font-size:22px}
+.stat span{font-size:11px;color:var(--muted)}
+.toolbar{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;margin-bottom:10px}
+.search{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 13px;font-size:16px;background:#fff}
+.filters{display:flex;gap:7px;overflow:auto;padding-top:9px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 12px;font-size:13px;white-space:nowrap}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.category-title{font-size:13px;color:var(--muted);font-weight:700;margin:18px 4px 7px;text-transform:uppercase;letter-spacing:.04em}
+.item{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:8px}
+.item-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.item-name{font-weight:700;font-size:16px}
+.need{font-size:12px;color:var(--muted);margin-top:3px}
+.missing{font-size:13px;font-weight:700;color:var(--warn);background:var(--warn-soft);padding:6px 8px;border-radius:999px;white-space:nowrap}
+.ok{color:var(--accent);background:var(--accent-soft)}
+.counter{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;margin-top:11px}
+.counter button{height:44px;border:1px solid var(--line);background:#fff;border-radius:12px;font-size:24px}
+.counter input{height:44px;width:100%;border:1px solid var(--line);border-radius:12px;text-align:center;font-size:17px}
+.quick{display:flex;gap:7px;margin-top:8px}
+.quick button{flex:1;border:0;background:var(--accent-soft);color:var(--accent);padding:9px;border-radius:10px;font-size:12px;font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:34px 10px}
+footer{font-size:11px;color:var(--muted);margin-top:22px;line-height:1.45}
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom));width:min(calc(100% - 20px),740px);background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:18px;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px;box-shadow:0 8px 28px rgba(0,0,0,.08)}
+.nav button{border:0;background:transparent;border-radius:13px;padding:11px 8px;font-size:14px;font-weight:700}
+.nav button.active{background:var(--accent);color:#fff}
+.install{width:100%;margin-top:10px;border:1px dashed var(--line);background:transparent;border-radius:14px;padding:12px;font-size:13px;color:var(--muted)}
+@media (max-width:390px){h1{font-size:25px}.badge{display:none}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><h1>Mi Despensa</h1><p class="sub">Plan alimenticio · lista semanal</p></div>
+  <div class="badge">Se guarda en este iPhone</div>
+</header>
+
+<section class="summary" aria-label="Resumen">
+  <div class="stat"><strong id="covered">0</strong><span>Cubiertos</span></div>
+  <div class="stat"><strong id="missingCount">0</strong><span>Por comprar</span></div>
+  <div class="stat"><strong id="totalCount">65</strong><span>Productos</span></div>
+</section>
+
+<section class="toolbar">
+  <input id="search" class="search" type="search" placeholder="Buscar alimento…" aria-label="Buscar alimento">
+  <div class="filters" id="filters"></div>
+</section>
+
+<div id="list"></div>
+<div id="empty" class="empty" hidden>No hay productos con este filtro.</div>
+
+<button class="install" id="installHelp" type="button">¿Cómo instalarla en la pantalla de inicio?</button>
+
+<footer>
+  Las cantidades necesarias se cargaron tal como aparecen en las páginas 6 y 7 del PDF original.
+  Los valores “Fat”, “Protein” y “Legume” se conservan porque también aparecen en la lista del plan.
+</footer>
+</main>
+
+<nav class="nav" aria-label="Vista">
+  <button id="shopTab" class="active" type="button">🛒 Por comprar</button>
+  <button id="pantryTab" type="button">🏠 Mi despensa</button>
+</nav>
+
+<script>
+const PRODUCTS = [{"id": 1, "name": "Arroz cocido", "need": 2, "unit": "taza", "category": "Cereal"}, {"id": 2, "name": "Elote", "need": 2, "unit": "taza", "category": "Cereal"}, {"id": 3, "name": "Harina de maíz", "need": 2, "unit": "cucharadas", "category": "Cereal"}, {"id": 4, "name": "Pan integral", "need": 2, "unit": "pieza", "category": "Cereal"}, {"id": 5, "name": "Pan integral tostado", "need": 2, "unit": "pieza", "category": "Cereal"}, {"id": 6, "name": "Pan thin integral", "need": 2, "unit": "pieza", "category": "Cereal"}, {"id": 7, "name": "Papa cocida", "need": 2, "unit": "pieza", "category": "Cereal"}, {"id": 8, "name": "Tortilla de maíz", "need": 14, "unit": "pieza", "category": "Cereal"}, {"id": 9, "name": "Tortilla de nopal", "need": 8, "unit": "piezas", "category": "Cereal"}, {"id": 10, "name": "Tostadas horneadas", "need": 6, "unit": "piezas", "category": "Cereal"}, {"id": 11, "name": "Yogurt griego natural sin azúcar", "need": 7, "unit": "taza", "category": "Lácteo"}, {"id": 12, "name": "Aceite", "need": 3, "unit": "cucharadita", "category": "Grasa"}, {"id": 13, "name": "Aceite de aguacate", "need": 5, "unit": "cucharadita", "category": "Grasa"}, {"id": 14, "name": "Aceite de oliva", "need": 10.5, "unit": "cucharadita", "category": "Grasa"}, {"id": 15, "name": "Aceite en spray", "need": 5, "unit": "disparos de 1 seg", "category": "Grasa"}, {"id": 16, "name": "Aguacate", "need": 29.5, "unit": "pieza", "category": "Grasa"}, {"id": 17, "name": "Almendra", "need": 0.666667, "unit": "piezas", "category": "Grasa"}, {"id": 18, "name": "Cacahuate", "need": 2, "unit": "piezas", "category": "Grasa"}, {"id": 19, "name": "Crema de cacahuate natural", "need": 2.666667, "unit": "cucharada", "category": "Grasa"}, {"id": 20, "name": "Fat", "need": 7, "unit": "portion", "category": "Grasa"}, {"id": 21, "name": "Guacamole", "need": 3, "unit": "cucharadas", "category": "Grasa"}, {"id": 22, "name": "Nuez", "need": 8, "unit": "mitades", "category": "Grasa"}, {"id": 23, "name": "Nuez de la india sin sal", "need": 0.666667, "unit": "piezas", "category": "Grasa"}, {"id": 24, "name": "Pepita de calabaza", "need": 4, "unit": "cucharadas", "category": "Grasa"}, {"id": 25, "name": "Semilla de chía", "need": 3, "unit": "cucharadas", "category": "Grasa"}, {"id": 26, "name": "Arándano azul", "need": 1.5, "unit": "taza", "category": "Fruta"}, {"id": 27, "name": "Arándano deshidratado", "need": 1, "unit": "cucharadas", "category": "Fruta"}, {"id": 28, "name": "Dátil seco", "need": 1, "unit": "piezas", "category": "Fruta"}, {"id": 29, "name": "Frambuesa", "need": 1, "unit": "taza", "category": "Fruta"}, {"id": 30, "name": "Fresa rebanada", "need": 1.5, "unit": "taza", "category": "Fruta"}, {"id": 31, "name": "Kiwi", "need": 2.333333, "unit": "pieza", "category": "Fruta"}, {"id": 32, "name": "Manzana", "need": 3.333333, "unit": "pieza", "category": "Fruta"}, {"id": 33, "name": "Moras", "need": 1.75, "unit": "taza", "category": "Fruta"}, {"id": 34, "name": "Naranja", "need": 4.5, "unit": "piezas", "category": "Fruta"}, {"id": 35, "name": "Pera", "need": 1, "unit": "pieza", "category": "Fruta"}, {"id": 36, "name": "Piña picada", "need": 2, "unit": "taza", "category": "Fruta"}, {"id": 37, "name": "Plátano", "need": 1.166667, "unit": "pieza", "category": "Fruta"}, {"id": 38, "name": "Toronja", "need": 1, "unit": "pieza", "category": "Fruta"}, {"id": 39, "name": "Uva", "need": 4, "unit": "piezas", "category": "Fruta"}, {"id": 40, "name": "Zarzamora", "need": 0.75, "unit": "taza", "category": "Fruta"}, {"id": 41, "name": "Frijol cocido", "need": 4, "unit": "taza", "category": "Leguminosa"}, {"id": 42, "name": "Legume", "need": 3, "unit": "portion", "category": "Leguminosa"}, {"id": 43, "name": "Carne molida de pavo", "need": 5, "unit": "gramos", "category": "Proteína"}, {"id": 44, "name": "Clara de huevo", "need": 6, "unit": "piezas", "category": "Proteína"}, {"id": 45, "name": "Pechuga de pollo", "need": 12, "unit": "gramos", "category": "Proteína"}, {"id": 46, "name": "Pechuga de pollo molida", "need": 6, "unit": "gramos", "category": "Proteína"}, {"id": 47, "name": "Pescado blanco", "need": 3, "unit": "gramos", "category": "Proteína"}, {"id": 48, "name": "Protein", "need": 11, "unit": "portion", "category": "Proteína"}, {"id": 49, "name": "Queso cottage", "need": 8, "unit": "cucharadas", "category": "Proteína"}, {"id": 50, "name": "Queso panela", "need": 10, "unit": "gramos", "category": "Proteína"}, {"id": 51, "name": "Requesón", "need": 3, "unit": "cucharadas", "category": "Proteína"}, {"id": 52, "name": "Res sin grasa", "need": 6, "unit": "gramos", "category": "Proteína"}, {"id": 53, "name": "Calabacita", "need": 5, "unit": "pieza", "category": "Vegetal"}, {"id": 54, "name": "Cebolla morada/blanca", "need": 4.333333, "unit": "taza", "category": "Vegetal"}, {"id": 55, "name": "Champiñón crudo", "need": 1.666667, "unit": "taza", "category": "Vegetal"}, {"id": 56, "name": "Ejote cocido", "need": 1, "unit": "taza", "category": "Vegetal"}, {"id": 57, "name": "Espinaca cruda picada", "need": 1.5, "unit": "tazas", "category": "Vegetal"}, {"id": 58, "name": "Jícama picada", "need": 1, "unit": "taza", "category": "Vegetal"}, {"id": 59, "name": "Lechuga", "need": 2.666667, "unit": "tazas", "category": "Vegetal"}, {"id": 60, "name": "Pimiento de color", "need": 1.166667, "unit": "pieza", "category": "Vegetal"}, {"id": 61, "name": "Tomate / jitomate", "need": 5.75, "unit": "pieza", "category": "Vegetal"}, {"id": 62, "name": "Tomate cherry / jitomate cherry", "need": 2, "unit": "piezas", "category": "Vegetal"}, {"id": 63, "name": "Tomate verde", "need": 0.5, "unit": "piezas", "category": "Vegetal"}, {"id": 64, "name": "Zanahoria cruda picada/rallada", "need": 1, "unit": "taza", "category": "Vegetal"}, {"id": 65, "name": "Zanahoria miniatura cruda", "need": 0.333333, "unit": "piezas", "category": "Vegetal"}];
+const STORAGE_KEY = 'mi-despensa-gabo-v1';
+const CATS = ['Todas','Cereal','Lácteo','Grasa','Fruta','Leguminosa','Proteína','Vegetal'];
+let state = loadState();
+let view = 'shop';
+let category = 'Todas';
+
+function loadState(){
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const inventory = saved.inventory || {};
+    return {inventory};
+  } catch(e) { return {inventory: {}}; }
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function frac(n) {
+  const rounded = Math.round(n * 12) / 12;
+  const whole = Math.floor(rounded + 1e-9);
+  const rem = rounded - whole;
+  const fracs = [[1/12,'1/12'],[1/6,'1/6'],[1/4,'1/4'],[1/3,'1/3'],[5/12,'5/12'],[1/2,'1/2'],[7/12,'7/12'],[2/3,'2/3'],[3/4,'3/4'],[5/6,'5/6'],[11/12,'11/12']];
+  let label = '';
+  if (rem > .001) {
+    let best = fracs[0];
+    for (const f of fracs) if (Math.abs(f[0]-rem) < Math.abs(best[0]-rem)) best=f;
+    label = best[1];
+  }
+  if (whole && label) return whole + ' ' + label;
+  if (whole) return String(whole);
+  if (label) return label;
+  return String(Math.max(0, Math.round(n*100)/100));
+}
+
+function inv(id) { return Number(state.inventory[id] || 0); }
+function miss(p) { return Math.max(0, p.need - inv(p.id)); }
+
+function setInv(id, value) {
+  const p = PRODUCTS.find(x => x.id === id);
+  const max = Math.max(p.need * 10, 999);
+  state.inventory[id] = Math.min(max, Math.max(0, Number(value) || 0));
+  saveState(); render();
+}
+
+function renderFilters(){
+  const host = document.getElementById('filters');
+  host.innerHTML = '';
+  CATS.forEach(c => {
+    const b = document.createElement('button');
+    b.type='button'; b.className='chip'+(c===category?' active':''); b.textContent=c;
+    b.addEventListener('click',()=>{category=c; render();});
+    host.appendChild(b);
+  });
+}
+
+function render(){
+  renderFilters();
+  document.getElementById('shopTab').classList.toggle('active', view==='shop');
+  document.getElementById('pantryTab').classList.toggle('active', view==='pantry');
+  const q = document.getElementById('search').value.trim().toLowerCase();
+
+  const covered = PRODUCTS.filter(p => miss(p) <= 0.0001).length;
+  const missing = PRODUCTS.length - covered;
+  document.getElementById('covered').textContent = covered;
+  document.getElementById('missingCount').textContent = missing;
+
+  let list = PRODUCTS.filter(p => {
+    const matchesView = view === 'shop' ? miss(p) > .0001 : inv(p.id) > .0001;
+    const matchesCat = category === 'Todas' || p.category === category;
+    const matchesQ = !q || p.name.toLowerCase().includes(q);
+    return matchesView && matchesCat && matchesQ;
+  });
+
+  const host = document.getElementById('list');
+  host.innerHTML = '';
+  document.getElementById('empty').hidden = list.length > 0;
+
+  let lastCat = '';
+  list.forEach(p => {
+    if (p.category !== lastCat) {
+      const t = document.createElement('div');
+      t.className='category-title'; t.textContent=p.category;
+      host.appendChild(t); lastCat=p.category;
+    }
+    const have = inv(p.id);
+    const remaining = miss(p);
+    const card = document.createElement('section');
+    card.className='item';
+
+    const top = document.createElement('div'); top.className='item-top';
+    const left = document.createElement('div');
+    const name = document.createElement('div'); name.className='item-name'; name.textContent=p.name;
+    const req = document.createElement('div'); req.className='need';
+    req.textContent='Necesito: ' + frac(p.need) + ' ' + p.unit + ' · Tengo: ' + frac(have);
+    left.append(name,req);
+
+    const status = document.createElement('div');
+    status.className='missing'+(remaining<=.0001?' ok':'');
+    status.textContent = remaining<=.0001 ? '✓ Cubierto' : 'Falta ' + frac(remaining);
+    top.append(left,status);
+
+    const counter = document.createElement('div'); counter.className='counter';
+    const minus=document.createElement('button'); minus.type='button'; minus.textContent='−'; minus.setAttribute('aria-label','Restar');
+    const input=document.createElement('input'); input.type='number'; input.min='0'; input.step='0.25'; input.inputMode='decimal'; input.value=String(Math.round(have*100)/100); input.setAttribute('aria-label','Cantidad disponible');
+    const plus=document.createElement('button'); plus.type='button'; plus.textContent='+'; plus.setAttribute('aria-label','Sumar');
+    minus.addEventListener('click',()=>setInv(p.id, have-0.25));
+    plus.addEventListener('click',()=>setInv(p.id, have+0.25));
+    input.addEventListener('change',()=>setInv(p.id,input.value));
+    counter.append(minus,input,plus);
+
+    const quick=document.createElement('div'); quick.className='quick';
+    const none=document.createElement('button'); none.type='button'; none.textContent='Vacío';
+    const half=document.createElement('button'); half.type='button'; half.textContent='½ necesario';
+    const full=document.createElement('button'); full.type='button'; full.textContent=view==='shop'?'Ya lo compré':'Completar';
+    none.addEventListener('click',()=>setInv(p.id,0));
+    half.addEventListener('click',()=>setInv(p.id,p.need/2));
+    full.addEventListener('click',()=>setInv(p.id,p.need));
+    quick.append(none,half,full);
+
+    card.append(top,counter,quick); host.appendChild(card);
+  });
+}
+
+document.getElementById('search').addEventListener('input',render);
+document.getElementById('shopTab').addEventListener('click',()=>{view='shop';render();});
+document.getElementById('pantryTab').addEventListener('click',()=>{view='pantry';render();});
+document.getElementById('installHelp').addEventListener('click',()=>{
+  alert('En iPhone: abre esta app en Safari → toca Compartir (□↑) → “Agregar a pantalla de inicio” → Agregar.');
+});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+render();
+</script>
+</body>
+</html>
